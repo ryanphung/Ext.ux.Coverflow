@@ -1,0 +1,16 @@
+div.coverflow-wrapper{
+	overflow: hidden;
+	position: relative;
+	margin: 0 auto;
+	background-color: white;
+}
+div.coverflow{
+	display: inline-block;
+	position: relative;
+	top: 0px;
+	left: 0px;
+}
+img.coverflow-image{
+	position: relative;
+	vertical-align: top;
+}

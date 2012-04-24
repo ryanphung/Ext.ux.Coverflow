@@ -1,4 +1,4 @@
-Extjs.ux.Coverflow
+Ext.ux.Coverflow
 ==================
 
-Coverflow User Extension for ExtJS
+Coverflow User Extension for ExtJS.

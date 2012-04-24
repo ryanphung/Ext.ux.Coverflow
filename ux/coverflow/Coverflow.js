@@ -246,11 +246,15 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         //Trigger the ‘select’ event/callback
         //if (!noPropagation) this._trigger('select', null, this._uiHash());
         
-		body.getEl().animate({
-            to: animation,
-            duration: this.duration,
-            easing: 'easeOut'
-        });
+		if (this.myAnim)
+			this.myAnim.end();
+
+		this.myAnim = Ext.create('Ext.fx.Anim', {
+			target: body.getEl(),
+			duration: this.duration,
+			to: animation,
+			easing: 'easeOut'
+		});
 
         /*var stepsNo = 4;
         var keyframes = [];

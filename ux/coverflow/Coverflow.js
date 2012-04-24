@@ -1,6 +1,7 @@
 Ext.define('Ext.ux.coverflow.Coverflow', {
     extend: 'Ext.Container',
     alias: 'widget.coverflow',
+	requires: ['Ext.fx.PropertyHandler'],
     orientation: 'horizontal',
     item: 0,
     cls: 'coverflow-wrapper',
@@ -37,9 +38,93 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         this.itemHeight = conf.itemWidth ? conf.itemHeight : '260';
         this.props = conf.orientation == 'vertical' ? ['height', 'Height', 'top', 'Top', 't'] : ['width', 'Width', 'left', 'Left', 'l'];
         this.itemSize = 1.2 * this.itemWidth;
-        this.duration = conf.duration;
+        this.duration = conf.duration ? conf.duration : 1000;
         this.current = conf.item ? conf.item : 0; // initial item
 		this.alpha = conf.alpha ? conf.alpha: 80;
+
+		Ext.fx.PropertyHandler['coverflow'] = {
+			pixelDefaultsRE: /width|height|top$|bottom$|left$|right$/i,
+            unitRE: /^(-?\d*\.?\d*){1}(em|ex|px|in|cm|mm|pt|pc|%)*$/,
+            scrollRE: /^scroll/i,
+
+            computeDelta: function(from, end, damper, initial, attr) {
+                damper = (typeof damper == 'number') ? damper : 1;
+                var unitRE = this.unitRE,
+                    match = unitRE.exec(from),
+                    start, units;
+                if (match) {
+                    from = match[1];
+                    units = match[2];
+                    if (!this.scrollRE.test(attr) && !units && this.pixelDefaultsRE.test(attr)) {
+                        units = 'px';
+                    }
+                }
+                from = +from || 0;
+
+                match = unitRE.exec(end);
+                if (match) {
+                    end = match[1];
+                    units = match[2] || units;
+                }
+                end = +end || 0;
+                start = (initial != null) ? initial : from;
+                return {
+                    from: from,
+                    delta: (end - start) * damper,
+                    units: units
+                };
+            },
+
+            get: function(from, end, damper, initialFrom, attr) {
+                var ln = from.length,
+                    out = [],
+                    i, initial, res, j, len;
+                for (i = 0; i < ln; i++) {
+                    if (initialFrom) {
+                        initial = initialFrom[i][1].from;
+                    }
+                    if (Ext.isArray(from[i][1]) && Ext.isArray(end)) {
+                        res = [];
+                        j = 0;
+                        len = from[i][1].length;
+                        for (; j < len; j++) {
+                            res.push(this.computeDelta(from[i][1][j], end[j], damper, initial, attr));
+                        }
+                        out.push([from[i][0], res]);
+                    }
+                    else {
+                        out.push([from[i][0], this.computeDelta(from[i][1], end, damper, initial, attr)]);
+                    }
+                }
+                return out;
+            },
+
+            set: function(values, easing) {
+				console.log(easing);
+				var to = Math.abs(me.previous - me.current) <= 1 ? me.previous : me.current + (me.previous < me.current ? -1 : 1);
+				
+				me._refresh(easing, to, me.current);
+				
+                var ln = values.length,
+                    out = [],
+                    i, val, res, len, j;
+                for (i = 0; i < ln; i++) {
+                    val  = values[i][1];
+                    if (Ext.isArray(val)) {
+                        res = [];
+                        j = 0;
+                        len = val.length;
+                        for (; j < len; j++) {
+                            res.push(val[j].from + (val[j].delta * easing) + (val[j].units || 0));
+                        }
+                        out.push([values[i][0], res]);
+                    } else {
+                        out.push([values[i][0], val.from + (val.delta * easing) + (val.units || 0)]);
+                    }
+                }
+                return out;
+            }
+		};
     },
 
     // add custom processing to the onRender phase
@@ -156,6 +241,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         };
         var body = this.getComponent('body');
         animation[this.props[2]] = (this._calculateBodyOffset());
+		animation['coverflow'] = 1;
         // TODO
         //Trigger the ‘select’ event/callback
         //if (!noPropagation) this._trigger('select', null, this._uiHash());
@@ -166,7 +252,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
             easing: 'easeOut'
         });
 
-        var stepsNo = 4;
+        /*var stepsNo = 4;
         var keyframes = [];
         for (var i = 0; i <= stepsNo; i++) {
             keyframes[100 * i / stepsNo + '%'] = {};
@@ -185,28 +271,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
                         var css = me._refresh(1, to, me.current);
                     }
                 }
-        });
-
-        /*this.getImages().each(function (item, i, len) {
-            item.getEl().animate({
-                keyframes: keyframes,
-                duration: this.duration,
-                easing: 'ease0ut',
-                listeners: {
-                    keyframe: function (self, keyframe, options) {
-                        var step = (keyframe - 1) / stepsNo;
-                        //console.log(item.imageId + ' | ' + keyframe + ' | ' + step);
-                        var css = me._calculateImageStyle(item, i, step, to, me.current);
-                        item.getEl().applyStyles(css);
-                    },
-                    afteranimate: function (self, time, options) {
-                        var css = me._calculateImageStyle(item, i, 1, to, me.current);
-                        item.getEl().applyStyles(css);
-                    }
-                }
-            });
         });*/
-        //this._refresh(1, 0, this.current);
     },
 
     _calculateImageStyle: function (item, i, state, from, to) {
@@ -234,7 +299,6 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
 			}
 			
 			css[me.props[2]] = ( (-i * (me.itemSize/2)) + (side == 'right'? -me.itemSize/2 : me.itemSize/2) * mod );
-            //css['filter'] = "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand', M11=" + (1 - mod * 0.6) + ", M12=" + mod * (side == 'right' ? 0.1 : -0.1) + ", M21=" + (mod * (side == 'right' ? -0.3 : 0.3)) + ", M22=1";
             			
 			css.width = me.itemWidth * (1 + ((1 - mod) * 0.5));
             css.height = css.width * (me.itemHeight / me.itemWidth);
@@ -257,7 +321,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
                 }
             } //end if*/
         } else {
-            css[me.vendorPrefix + 'Transform'] = 'matrix(' + (1 - mod * 0.6) + ',' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.1 : -0.1) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
+            //css[me.vendorPrefix + 'Transform'] = 'matrix(' + (1 - mod * 0.6) + ',' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.1 : -0.1) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
 			//css[me.vendorPrefix + 'Transform'] = 'matrix(0,' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.1 : -0.1) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
 			css[me.vendorPrefix + 'Transform'] = 'matrix(1,' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.05 : -0.05) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
             css[me.props[2]] = ((-i * (me.itemSize / 2)) + (side == 'right' ? -me.itemSize / 2 : me.itemSize / 2) * mod);

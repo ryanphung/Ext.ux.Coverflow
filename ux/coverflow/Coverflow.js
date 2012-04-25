@@ -1,5 +1,5 @@
 Ext.define('Ext.ux.coverflow.Coverflow', {
-    extend: 'Ext.Container',
+    extend: 'Ext.view.View',
     alias: 'widget.coverflow',
 	requires: ['Ext.fx.PropertyHandler'],
     orientation: 'horizontal',
@@ -12,7 +12,6 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
     initComponent: function () {
         var me = this,
             conf = this.initialConfig;
-        this.callParent(arguments);
 
         function getPrefix(prop) {
             var prefixes = ['Moz', 'Webkit', 'Khtml', 'O', 'ms'],
@@ -36,11 +35,26 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         this.vendorPrefix = getPrefix('transform');
         this.itemWidth = conf.itemWidth ? conf.itemWidth : '260';
         this.itemHeight = conf.itemWidth ? conf.itemHeight : '260';
-        this.props = conf.orientation == 'vertical' ? ['height', 'Height', 'top', 'Top', 't'] : ['width', 'Width', 'left', 'Left', 'l'];
+        this.props = conf.orientation == 'vertical' ? ['height', 'Height', 'top', 'Top', 't', 'left'] : ['width', 'Width', 'left', 'Left', 'l', 'top'];
         this.itemSize = 1.2 * this.itemWidth;
-        this.duration = conf.duration ? conf.duration : 1000;
+        this.duration = conf.duration ? conf.duration : 450;
         this.current = conf.item ? conf.item : 0; // initial item
 		this.alpha = conf.alpha ? conf.alpha: 80;
+		this.data = [];
+		this.tpl = conf.tpl? conf.tpl : new Ext.XTemplate(
+			'<div class="coverflow"/>',
+				'<tpl for=".">',
+					'<div class="coverflow-item">',
+					  '<img class="coverflow-image" src="{src}" width="' + this.itemWidth + '" height="' + this.itemHeight + '"/>',
+					'</div>',
+				'</tpl>',
+			'</div>'
+		);
+		this.store = conf.store;
+		this.itemSelector = 'div.coverflow-item';
+		this.emptyText = 'No images available';
+		
+        this.callParent(arguments);
 
 		Ext.fx.PropertyHandler['coverflow'] = {
 			pixelDefaultsRE: /width|height|top$|bottom$|left$|right$/i,
@@ -126,38 +140,78 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
             }
 		};
     },
-
-    // add custom processing to the onRender phase
-    // this will be called before the component is rendered
-    onRender: function () {
-        var me = this;
-        this.callParent(arguments);
-        this.add({
-            xtype: 'container',
-            itemId: 'body',
-            width: 0,
-            height: this.itemHeight * 1.5,
-            //padding: this.itemHeight * 0.4,
-            margin: this.itemHeight * 0.4,
-            cls: 'coverflow'
-        });
-
-        //Jump to the first item
-        this._refresh(1, 0, this.current);
-    },
-
-    afterLayout: function () {
-        //center the actual parent's left side within it's parent
-        var css = [];
-        css[this.props[2]] = this._calculateBodyOffset() + 'px';
-        this.getComponent('body').getEl().applyStyles(css);
-    },
+	
+	afterRender: function() {
+		this.callParent(arguments);
+		
+		this.on({
+			viewready: function() {
+				console.log('viewready');
+				this.innerElement = Ext.get(this.getEl().select('div.coverflow').first());
+				//Jump to the first item
+				this._refresh(1, 0, this.current);
+				this._adjustBodyOffset();
+			},
+			resize: function(self, adjWidth, adjHeight, eOpts) {
+				console.log('resized');
+				if (this.innerElement) {
+					this._adjustBodyOffset();
+				}
+			},
+			itemclick: function(self, record, item, index, e, eOpts) {
+				this.select(index);
+			},
+		});
+		
+		/*this.mon(this.getStore(), 'add', this.onStoreAdd, this);
+		
+		this.mon(this.getStore(), 'update', this.onStoreUpdate, this);
+		
+		this.mon(this.getStore(), 'remove', this.onStoreRemove, this);*/
+	},
+	
+	//@override
+	refresh: function() {
+		console.log('before refresh');
+		this.callParent(arguments);
+		console.log('after refresh');
+		
+		this.innerElement = Ext.get(this.getEl().select('div.coverflow').first());
+		this._refresh(1, 0, this.current);
+		this._adjustBodyOffset();
+	},
+	
+	/*doAdd: function(nodes, records, index) {
+		this.callParent(arguments);
+		console.log('add ' + records.length + ' records at ' + index);
+		
+		this._refresh(1, 0, this.current);
+		this._adjustBodyOffset();
+	},*/
+	
+	onStoreUpdate: function(store, record, index, operation, eOpts) {
+		console.log(operation + ' record at ' + index);
+	},
+	
+	onStoreRemove: function(store, record, index, eOpts) {
+		console.log('remove records at ' + index);
+	},
 
     _adjustBodySize: function () {
-        this.getComponent('body').setWidth((this.getImages().length + 1) * this.itemWidth);
+		var css = [];
+		css[this.props[0]] = (this.getStore().getCount() + 1) * this.itemWidth;
+		css[this.props[5]] = this.itemHeight * 0.4 + 'px';
+		this.innerElement.applyStyles(css);
+    },
+	
+	_adjustBodyOffset: function () {
+		//center the actual parent's left side within it's parent
+		var css = [];
+		css[this.props[2]] = this._calculateBodyOffset() + 'px';
+		this.innerElement.applyStyles(css);
     },
 
-    getImages: function () {
+    /*getImages: function () {
         return this.getComponent('body').items ? this.getComponent('body').items : [];
     },
 
@@ -211,22 +265,23 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         }
         
 		this._refresh(1, 0, this.current);
-    },
+    },*/
 
     _calculateBodyOffset: function () {
-        var body = this.getComponent('body');
+        var innerElement = this.innerElement;
 
         return (this.recenter ? -this.current * this.itemSize / 3 : 0) // TODO-this might not be itemSize!
         +
         (this.center ? parseInt(this.getEl().dom['offset' + this.props[1]], 10) / 2 - this.itemWidth / 2 : 0) // Center the items container
         -
-        (this.center ? body.getEl().getPadding(this.props[4]) : 0) // Subtract the padding of the body
+        (this.center ? innerElement.getPadding(this.props[4]) : 0) // Subtract the padding of the body
         -
-        (this.center ? body.getEl().getMargin(this.props[4]) : 0) // Subtract the margin of the body
+        (this.center ? innerElement.getMargin(this.props[4]) : 0) // Subtract the margin of the body
     },
+
     select: function (item, noPropagation) {
         this.previous = this.current;
-        this.current = !isNaN(parseInt(item, 10)) ? parseInt(item, 10) : this.getImages().getAt(item);
+        this.current = !isNaN(parseInt(item, 10)) ? parseInt(item, 10) : this.getStore().getAt(item);
         //Don't animate when clicking on the same item
         if (this.previous == this.current) return false;
         //Overwrite $.fx.step.coverflow everytime again with custom scoped values for this specific animation
@@ -239,7 +294,6 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
         var animation = {
             //coverflow: 1
         };
-        var body = this.getComponent('body');
         animation[this.props[2]] = (this._calculateBodyOffset());
 		animation['coverflow'] = 1;
         // TODO
@@ -250,32 +304,11 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
 			this.myAnim.end();
 
 		this.myAnim = Ext.create('Ext.fx.Anim', {
-			target: body.getEl(),
+			target: this.innerElement,
 			duration: this.duration,
 			to: animation,
 			easing: 'easeOut'
 		});
-
-        /*var stepsNo = 4;
-        var keyframes = [];
-        for (var i = 0; i <= stepsNo; i++) {
-            keyframes[100 * i / stepsNo + '%'] = {};
-        }
-		
-		this.getEl().animate({
-			keyframes: keyframes,
-            duration: this.duration,
-            easing: 'easeOut',
-			listeners: {
-                    keyframe: function (self, keyframe, options) {
-                        var step = (keyframe - 1) / stepsNo;
-                        var css = me._refresh(step, to, me.current);
-                    },
-                    afteranimate: function (self, time, options) {
-                        var css = me._refresh(1, to, me.current);
-                    }
-                }
-        });*/
     },
 
     _calculateImageStyle: function (item, i, state, from, to) {
@@ -284,7 +317,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
             mod = i == to ? (1 - state) : (i == from ? state : 1),
             before = (i > from && i != to),
             css = {
-                zIndex: me.getImages().length + (side == "left" ? to - i : i - to)
+                zIndex: me.getStore().getCount() + (side == "left" ? to - i : i - to)
             };
 
 		var alpha = this.alpha + (100 - this.alpha) * (1 - mod);
@@ -298,7 +331,7 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
 			;
 			
 			// do not apply the filter if it's the same!
-			if (item.getEl().dom.style['filter'] !== filter) {
+			if (me.getNode(i).style['filter'] !== filter) {
 				css['filter'] = filter;
 			}
 			
@@ -313,6 +346,12 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
 			css.width += 'px';
 			css.height += 'px';
 			css.top += 'px';
+			
+			var imgCss = [];
+			imgCss.width = css.width;
+			imgCss.height = css.height;
+			
+			Ext.fly(Ext.fly(me.getNode(i)).select('img.coverflow-image').first()).applyStyles(imgCss);
 			
 			/*if (i == me.current) {
                 
@@ -337,12 +376,10 @@ Ext.define('Ext.ux.coverflow.Coverflow', {
     _refresh: function (state, from, to) {
         var me = this,
             offset = null;
-        this.getImages().each(function (item, i, len) {
+        this.getStore().each(function (item, i, len) {
             var css = me._calculateImageStyle(item, i, state, from, to);
-            item.getEl().applyStyles(css);
+            Ext.fly(me.getNode(i)).applyStyles(css);
         });
-        // TODO
-        //this.getEl().parent().scrollTop(0);
         this._adjustBodySize();
     }
 });

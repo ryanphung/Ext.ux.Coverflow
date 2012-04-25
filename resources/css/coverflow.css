@@ -1,7 +1,7 @@
 div.coverflow-wrapper{
 	overflow: hidden;
 	position: relative;
-	margin: 0 auto;
+	margin: 0;
 	background-color: white;
 }
 div.coverflow{
@@ -9,6 +9,10 @@ div.coverflow{
 	position: relative;
 	top: 0px;
 	left: 0px;
+}
+div.coverflow-item{
+	display: inline-block;
+	position: relative;
 }
 img.coverflow-image{
 	position: relative;

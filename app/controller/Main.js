@@ -29,10 +29,16 @@ Ext.define('Demo.controller.Main', {
         })
     },
     onAddImage: function () {
-        var src = this.images[this.getPreview().getImages().length % 11];
-        this.getPreview().addImage(src);
+		var store = Ext.data.StoreManager.lookup('imagesStore');
+	
+        var src = this.images[store.getCount() % 11];
+		
+		store.add({
+			src: src
+		});
     },
     onRemoveImage: function () {
-        this.getPreview().removeImage(0);
+		var store = Ext.data.StoreManager.lookup('imagesStore');
+		store.removeAt(store.getCount() - 1);
     }
 });

@@ -1,4 +1,14 @@
-Ext.define('Ext.ux.coverflow.Coverflow', {
+/*
+Coverflow for ExtJS
+
+Author: Ryan Phung
+Re-written for ExtJS 4.0.7 by Ryan Phung with improvements / adjustments
+based on Coverflow by Paul Bakaus and Addy Osmani written for jQuery
+
+Github: http://github.com/ryanphung/Ext.ux.Coverflow
+*/
+
+Ext.define('Ext.ux.Coverflow', {
     extend: 'Ext.view.View',
     alias: 'widget.coverflow',
 	requires: ['Ext.fx.PropertyHandler'],

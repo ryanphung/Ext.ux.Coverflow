@@ -1,12 +1,14 @@
 /*
-	app.js
-	Author: Ryan Phung
-	Main application
-	Should not include any business logic except for application initiliazation
+Coverflow demo application
+
+Author: Ryan Phung
 */
+
+Ext.Loader.setPath('Ext.ux.Coverflow', 'ux/Coverflow.js');
+
 Ext.application({
     name: 'Demo',
-    autoCreateViewport: true, // once this is set to "true", ExtJS framework will automatically include app/View/Viewport.js
+    autoCreateViewport: true,
     controllers: ['Main'],
     launch: function() {
        // launch codes go here...

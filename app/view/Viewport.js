@@ -1,3 +1,9 @@
+/*
+Main viewport
+
+Author: Ryan Phung
+*/
+
 Ext.define('Demo.view.Viewport', {
     extend: 'Ext.container.Viewport',
     requires: ['Demo.view.Preview', 'Demo.view.Selection'],
@@ -23,12 +29,10 @@ Ext.define('Demo.view.Viewport', {
 		
 		var preview = Ext.create('Demo.view.Preview', {
 			store: Ext.data.StoreManager.lookup('imagesStore'),
-			itemSelector: 'div.thumb-wrap',
-			/*width: 1024,
-			height: 350,*/
+			margin: '5 5 5 5',
+			border: false,
             itemWidth: 200,
-            itemHeight: 200/*,
-			layout: 'fit'*/
+            itemHeight: 200
 		});
 	
         this.items = {
@@ -38,14 +42,12 @@ Ext.define('Demo.view.Viewport', {
                 xtype: 'panel',
                 height: 350,
 				layout: 'fit',
+				border: false,
                 items: [preview]
             }],
-            layout: {
-                type: 'hbox',
-                align: 'stretch'
-            },
             items: [{
-                xtype: 'slideselection'
+                xtype: 'slideselection',
+                border: false
             }]
         };
         this.callParent(arguments);

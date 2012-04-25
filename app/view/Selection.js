@@ -1,3 +1,9 @@
+/*
+Selection view, to allow editing the store
+
+Author: Ryan Phung
+*/
+
 Ext.define('Demo.view.Selection', {
 	extend: 'Ext.Container',
 	alias: 'widget.slideselection',
@@ -5,10 +11,14 @@ Ext.define('Demo.view.Selection', {
 	items: [{
 		xtype: 'button',
 		itemId: 'add',
-		text: 'Add Image'
+		text: 'Add Image',
+		padding: '5px',
+		margin: '5 5 5 5',
 	}, {
 		xtype: 'button',
 		itemId: 'remove',
-		text: 'Remove Image'
+		text: 'Remove Image',
+		padding: '5px',
+		margin: '5 5 5 5'
 	}]
 });

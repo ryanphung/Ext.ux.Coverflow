@@ -4,3 +4,7 @@
 *.jar
 *.war
 *.ear
+
+# Espresso Setting Files #
+.settings/*
+Ext.ux.Coverflow.esproj/*

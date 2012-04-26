@@ -4,6 +4,13 @@ Coverflow demo application
 Author: Ryan Phung
 */
 
+// TODO:
+// 1. Making things more configurable:
+// - Support images of different sizes (perhaps set maxItemWidth / maxItemHeight or scales?)
+// - Support different angles
+// - Support different size of the "selected" items
+// - Support mouse scroll
+
 Ext.Loader.setPath('Ext.ux.Coverflow', 'ux/Coverflow.js');
 
 Ext.application({

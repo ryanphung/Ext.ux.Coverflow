@@ -233,6 +233,31 @@ Ext.define('Ext.ux.Coverflow', {
                 //Jump to the first item
                 this._refresh(1, 0, this.current);
                 this._adjustBodyOffset();
+                
+                this.getEl().addKeyMap({
+                    key: Ext.EventObject.LEFT,
+                    fn: this.onKeyLeft,
+                    scope: this
+                });
+                
+                this.getEl().addKeyMap({
+                    key: Ext.EventObject.RIGHT,
+                    fn: this.onKeyRight,
+                    scope: this
+                });
+                
+                this.getEl().addKeyMap({
+                    key: Ext.EventObject.UP,
+                    fn: this.onKeyUp,
+                    scope: this
+                });
+                
+                this.getEl().addKeyMap({
+                    key: Ext.EventObject.DOWN,
+                    fn: this.onKeyDown,
+                    scope: this
+                });
+                
             },
             resize: function(self, adjWidth, adjHeight, eOpts) {
                 console.log('resized');
@@ -278,6 +303,30 @@ Ext.define('Ext.ux.Coverflow', {
         this._adjustBodyOffset();
     },
     
+    onKeyLeft: function() {
+        if (this.current > 0) {
+            this.select(this.current - 1);
+        }
+    },
+    
+    onKeyRight: function() {
+        if (this.current < this.getStore().getCount() - 1) {
+            this.select(this.current + 1);
+        }
+    },
+    
+    onKeyUp: function() {
+        if (this.current > 0) {
+            this.select(this.current - 1);
+        }
+    },
+    
+    onKeyDown: function() {
+        if (this.current < this.getStore().getCount() - 1) {
+            this.select(this.current + 1);
+        }
+    },    
+
     /*doAdd: function(nodes, records, index) {
         this.callParent(arguments);
         console.log('add ' + records.length + ' records at ' + index);

@@ -100,6 +100,13 @@ Ext.define('Ext.ux.Coverflow', {
     */
     emptyText: 'No images available',
     
+    /*
+    * @cfg {Number} wheelStep
+    * The wheel step to control scrolling navigation.
+    * The smaller the step, the faster scrolling is.
+    */
+    wheelStep: 3,
+    
     initComponent: function () {
         var me = this;
 
@@ -269,6 +276,11 @@ Ext.define('Ext.ux.Coverflow', {
                 this.select(index);
             },
         });
+        
+        this.mon(Ext.getDoc(), {
+            scope: this,
+            mousewheel: this.onMouseWheel
+        });
     },
     
     /*
@@ -303,28 +315,28 @@ Ext.define('Ext.ux.Coverflow', {
         this._adjustBodyOffset();
     },
     
-    onKeyLeft: function() {
-        if (this.current > 0) {
-            this.select(this.current - 1);
+    onMouseWheel: function(event) {
+        if (event.browserEvent.wheelDeltaY < -this.wheelStep) {
+            this.selectPrevious();
+        } else if (event.browserEvent.wheelDeltaY > this.wheelStep) {
+            this.selectNext();
         }
+    },
+    
+    onKeyLeft: function() {
+        this.selectPrevious();
     },
     
     onKeyRight: function() {
-        if (this.current < this.getStore().getCount() - 1) {
-            this.select(this.current + 1);
-        }
+        this.selectNext();
     },
     
     onKeyUp: function() {
-        if (this.current > 0) {
-            this.select(this.current - 1);
-        }
+        this.selectPrevious();
     },
     
     onKeyDown: function() {
-        if (this.current < this.getStore().getCount() - 1) {
-            this.select(this.current + 1);
-        }
+        this.selectNext();
     },    
 
     /*doAdd: function(nodes, records, index) {
@@ -367,6 +379,18 @@ Ext.define('Ext.ux.Coverflow', {
         (this.center ? innerElement.getPadding(this.props[4]) : 0) // Subtract the padding of the body
         -
         (this.center ? innerElement.getMargin(this.props[4]) : 0) // Subtract the margin of the body
+    },
+    
+    selectNext: function() {
+        if (this.current < this.getStore().getCount() - 1) {
+            this.select(this.current + 1);
+        }
+    },
+    
+    selectPrevious: function() {
+        if (this.current > 0) {
+            this.select(this.current - 1);
+        }
     },
 
     select: function (item, noPropagation) {

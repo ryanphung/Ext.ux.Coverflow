@@ -6,6 +6,7 @@ Author: Ryan Phung
 
 Ext.define('Demo.controller.Main', {
     extend: 'Ext.app.Controller',
+    stores: ['Images'],
     refs: [{
         selector: 'preview',
         ref: 'preview'
@@ -35,7 +36,7 @@ Ext.define('Demo.controller.Main', {
         })
     },
     onAddImage: function () {
-		var store = Ext.data.StoreManager.lookup('imagesStore');
+		var store = this.getImagesStore();
 	
         var src = this.images[store.getCount() % 11];
 		
@@ -44,7 +45,7 @@ Ext.define('Demo.controller.Main', {
 		});
     },
     onRemoveImage: function () {
-		var store = Ext.data.StoreManager.lookup('imagesStore');
+		var store = this.getImagesStore();
 		store.removeAt(store.getCount() - 1);
     }
 });

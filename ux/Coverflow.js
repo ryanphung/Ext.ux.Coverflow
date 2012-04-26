@@ -122,6 +122,9 @@ Ext.define('Ext.ux.Coverflow', {
             return pref;
         }
         
+        // applying the initial config to overwrite default values
+        Ext.apply(this, this.initialConfig);
+        
         /* Begin additional properties */
         this.vendorPrefix = getPrefix('transform');
         this.props = this.orientation == 'vertical' ? ['height', 'Height', 'top', 'Top', 't', 'left'] : ['width', 'Width', 'left', 'Left', 'l', 'top'];
@@ -304,63 +307,7 @@ Ext.define('Ext.ux.Coverflow', {
         css[this.props[2]] = this._calculateBodyOffset() + 'px';
         this.innerElement.applyStyles(css);
     },
-
-    /*getImages: function () {
-        return this.getComponent('body').items ? this.getComponent('body').items : [];
-    },
-
-    addImage: function (src) {
-        var imageId = this.getImages().length;
-        this.getComponent('body').add({
-            imageId: imageId,
-            xtype: 'coverflow-image',
-            src: src,
-            position: 'relative',
-            float: 'left',
-            // margin: -this.itemWidth / 7,
-            width: this.itemWidth,
-            height: this.itemWidth
-        });
-
-        this.mon(this.getImages().getAt(imageId).getEl(), 'click', function (e, t, options) {
-            this.select(options.imageId);
-        }, this, {
-            imageId: imageId
-        });
-        this._refresh(1, 0, this.current);
-
-    },
-
-    removeImage: function (index) {
-        var me = this;
-        // remove all listeners in all items after the removed item
-        this.getImages().each(function (item) {
-            if (item.imageId >= index) {
-                me.mun(item.getEl(), 'click');
-            }
-        });
-
-        this.getComponent('body').remove(index);
-
-        this.getImages().each(function (item) {
-            // adjusting the imageId of all items after the removed item
-            if (item.imageId > index) {
-                item.imageId--;
-                me.mon(item.getEl(), 'click', function (e, t, options) {
-                    this.select(options.imageId);
-                }, me, {
-                    imageId: item.imageId
-                });
-            }
-        });
-
-        if (this.current > index && this.current > 0) {
-            this.select(this.current - 1);
-        }
-        
-        this._refresh(1, 0, this.current);
-    },*/
-
+    
     _calculateBodyOffset: function () {
         var innerElement = this.innerElement;
 
@@ -461,6 +408,7 @@ Ext.define('Ext.ux.Coverflow', {
         }
         return css;
     },
+
     _refresh: function (state, from, to) {
         var me = this,
             offset = null;

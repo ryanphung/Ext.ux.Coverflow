@@ -5,16 +5,14 @@ div.coverflow-wrapper{
 	background-color: white;
 }
 div.coverflow{
-	display: inline-block;
 	position: relative;
 	top: 0px;
 	left: 0px;
 }
 div.coverflow-item{
-	display: inline-block;
-	position: relative;
+	position: absolute;
 }
 img.coverflow-image{
-	position: relative;
-	vertical-align: top;
+	position: absolute;
+	float: left;
 }

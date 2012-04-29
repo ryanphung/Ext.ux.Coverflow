@@ -14,7 +14,7 @@ Ext.define('Demo.view.Viewport', {
             dockedItems: [{
                 dock: 'top',
                 xtype: 'panel',
-                height: 400,
+                height: 500,
 				layout: 'fit',
 				border: false,
                 items: [{

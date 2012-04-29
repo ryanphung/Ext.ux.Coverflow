@@ -52,6 +52,12 @@ Ext.define('Ext.ux.Coverflow', {
     */
     itemHeight: 260,
     
+	/*
+    * @cfg {Number} selectedItemScale
+    * The factor used to scale up selected items
+    */
+	selectedItemScale: 1.3,
+	
     /*
     * @cfg {String} orientation
     * Orientation of the component. Possible values: 'horizontal', 'vertical'.
@@ -134,8 +140,14 @@ Ext.define('Ext.ux.Coverflow', {
         
         /* Begin additional properties */
         this.vendorPrefix = getPrefix('transform');
+		
+		if (this._isFunnyBrowser())
+			this.compensateScale = this.selectedItemScale;
+		else
+			this.compensateScale = 1;
+		
         this.props = this.orientation == 'vertical' ? ['height', 'Height', 'top', 'Top', 't', 'left'] : ['width', 'Width', 'left', 'Left', 'l', 'top'];
-        this.itemSize = 1.2 * this.itemWidth;
+        this.itemGap = 0.5 * this.itemWidth;
         this.current = this.item;
         this.tpl = new Ext.XTemplate(this.tpl); // TODO: check whether tpl is string
         /* End additional properties */
@@ -226,6 +238,10 @@ Ext.define('Ext.ux.Coverflow', {
             }
         };
     },
+	
+	_isFunnyBrowser: function() {
+		return (this.vendorPrefix == 'ms' || this.vendorPrefix == "");
+	},
     
     afterRender: function() {
         this.callParent(arguments);
@@ -274,7 +290,7 @@ Ext.define('Ext.ux.Coverflow', {
             },
             itemclick: function(self, record, item, index, e, eOpts) {
                 this.select(index);
-            },
+            }
         });
         
         this.mon(Ext.getDoc(), {
@@ -292,14 +308,14 @@ Ext.define('Ext.ux.Coverflow', {
     
         // Scaling item elements
         this.getEl().select(this.itemSelector).each(function(el) {
-            el.setWidth(me.itemWidth);
-            el.setHeight(me.itemHeight);
+            el.setWidth(me.itemWidth * me.compensateScale);
+            el.setHeight(me.itemHeight * me.compensateScale);
         });
         
         // Scaling images
         this.getEl().select(this.imageSelector).each(function(el) {
-            el.setWidth(me.itemWidth);
-            el.setHeight(me.itemHeight);
+            el.setWidth(me.itemWidth * me.compensateScale);
+            el.setHeight(me.itemHeight * me.compensateScale);
         });
     },
     
@@ -357,7 +373,7 @@ Ext.define('Ext.ux.Coverflow', {
 
     _adjustBodySize: function () {
         var css = [];
-        css[this.props[0]] = (this.getStore().getCount() + 1) * this.itemWidth;
+        css[this.props[0]] = (this.getStore().getCount() + 1) * this.itemWidth * this.compensateScale + 'px';
         css[this.props[5]] = this.itemHeight * 0.4 + 'px';
         this.innerElement.applyStyles(css);
     },
@@ -372,7 +388,7 @@ Ext.define('Ext.ux.Coverflow', {
     _calculateBodyOffset: function () {
         var innerElement = this.innerElement;
 
-        return (this.recenter ? -this.current * this.itemSize / 3 : 0) // TODO-this might not be itemSize!
+        return (this.recenter ? -this.current * this.itemGap : 0)
         +
         (this.center ? parseInt(this.getEl().dom['offset' + this.props[1]], 10) / 2 - this.itemWidth / 2 : 0) // Center the items container
         -
@@ -434,48 +450,52 @@ Ext.define('Ext.ux.Coverflow', {
                 zIndex: me.getStore().getCount() + (side == "left" ? to - i : i - to)
             };
 
+		/*
+		Explanation of "mod":
+			mod is 1 if the item should be rendered in unselected mode
+			mod is 0 if the iem should be rendered in selected mode
+			mod is between 0 and 1 when half-state rendering is needed
+		*/
+		
         var alpha = this.alpha + (100 - this.alpha) * (1 - mod);
 
-        if (me.vendorPrefix == 'ms' || me.vendorPrefix == "") {
-            
-        
+		var M = [];
+			M[0] = [], M[1] = [];
+			M[0][0] = 1;
+			M[0][1] = mod * (side == 'right' ? 0.05 : -0.05);
+			M[1][0] = mod * (side == 'right' ? -0.2 : 0.2);
+			M[1][1] = 1;
+		
+        if (me._isFunnyBrowser()) {
+			var scale = 1/(1 + mod * (this.selectedItemScale - 1));
+			M[0][0] *= scale, M[0][1] *= scale, M[1][0] *= scale, M[1][1] *= scale;
+			
             var filter = 
-                "progid:DXImageTransform.Microsoft.Matrix(sizingMethod='auto expand', M11=1, M12=" + mod * (side == 'right' ? 0.05 : -0.05) + ", M21=" + (mod * (side == 'right' ? -0.2 : 0.2)) + ", M22=1)"
+                "progid:DXImageTransform.Microsoft.Matrix(M11=" + M[0][0] + ", M12=" + M[0][1] + ", M21=" + M[1][0] + ", M22=" + M[1][1] + ", sizingMethod='auto expand')"
                 + " progid:DXImageTransform.Microsoft.Alpha(opacity=" + alpha + ")";
             ;
             
             // do not apply the filter if it's the same!
             if (me.getNode(i).style['filter'] !== filter) {
-                css['filter'] = filter;
+				css['filter'] = filter;
             }
-            
-            css[me.props[2]] = ( (-i * (me.itemSize/2)) + (side == 'right'? -me.itemSize/2 : me.itemSize/2) * mod );
-                        
-            css.width = me.itemWidth * (1 + ((1 - mod) * 0.5));
-            css.height = css.width * (me.itemHeight / me.itemWidth);
-            css.top = - css.height / 4 + me.itemHeight / 8;
-            
-            // Compatibility with stricter IE modes
-            css[me.props[2]] += 'px';
-            css.width += 'px';
-            css.height += 'px';
-            css.top += 'px';
-            
-            /*if (i == me.current) {
-                
-                //css.left -= me.itemWidth / 6 - 50;
-                css.left -= me.itemWidth / 6 - 40;
-            } else {
-                
-                if (side == "left") {
-                    css.left -= me.itemWidth / 5 - 50;
-                }
-            } //end if*/
+			
+			var translateX = i * me.itemGap + (side == 'right' ? -me.itemGap : me.itemGap) * mod;//((-i * (me.itemSize/2)));// + (side == 'right'? -me.itemSize/2 : me.itemSize/2) * mod);
+			
+			// Compensation because we have scaled up the images in IE
+			var compensateX1 = -(this.selectedItemScale - 1) * this.itemWidth;
+			
+			// Compensation for IE transformation origin errors
+			// Based on this awesome explanation: http://extremelysatisfactorytotalitarianism.com/blog/?p=922
+			var compensateX2 = (1 - Math.abs(M[0][0])) * this.itemWidth * this.compensateScale / 2 - Math.abs(M[0][1]) * this.itemHeight * this.compensateScale / 2;
+			var compensateY2 = (1 - Math.abs(M[1][1])) * this.itemHeight * this.compensateScale / 2 - Math.abs(M[1][0]) * this.itemWidth * this.compensateScale / 2;
+			
+			css.left = translateX + compensateX1 + compensateX2 + 'px';
+			css.top = compensateY2 + 'px';
         } else {
-            //css[me.vendorPrefix + 'Transform'] = 'matrix(' + (1 - mod * 0.6) + ',' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.1 : -0.1) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
-            //css[me.vendorPrefix + 'Transform'] = 'matrix(0,' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.1 : -0.1) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
-            css[me.vendorPrefix + 'Transform'] = 'matrix(1,' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.05 : -0.05) + ',1,0,0) scale(' + (1 + ((1 - mod) * 0.5)) + ')';
-            css[me.props[2]] = ((-i * (me.itemSize / 2)) + (side == 'right' ? -me.itemSize / 2 : me.itemSize / 2) * mod);
+			css[me.vendorPrefix + 'Transform'] = 'matrix(1,' + (mod * (side == 'right' ? -0.3 : 0.3)) + ',' + mod * (side == 'right' ? 0.05 : -0.05) + ',1,0,0) scale(' + (1 + ((1 - mod) * (this.selectedItemScale - 1))) + ')';
+			
+			css[me.props[2]] = i * me.itemGap + (side == 'right' ? -me.itemGap : me.itemGap) * mod;
             
             css['opacity'] = alpha / 100;
         }

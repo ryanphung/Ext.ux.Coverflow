@@ -13,7 +13,7 @@ Ext.define('Demo.view.Selection', {
 		itemId: 'add',
 		text: 'Add Image',
 		padding: '5px',
-		margin: '5 5 5 5',
+		margin: '5 5 5 5'
 	}, {
 		xtype: 'button',
 		itemId: 'remove',
